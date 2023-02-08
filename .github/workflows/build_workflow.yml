@@ -1,5 +1,7 @@
 name: Platform Tests & Build
 on: [push]
+env:
+  FILELIST_URL: ${{ vars.FILELIST_URL }}
 
 jobs:
   platform_tests:
