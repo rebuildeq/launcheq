@@ -49,7 +49,7 @@ func New(version string, patcherUrl string, fileListUrl string) (*Client, error)
 	if err != nil {
 		return nil, fmt.Errorf("config.new: %w", err)
 	}
-
+	c.logf("Starting launcheq %s %s", c.version, c.cfg.LaunchEQVersion)
 	c.currentPath, err = os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("wd invalid: %w", err)

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -18,7 +17,6 @@ var (
 )
 
 func main() {
-	log.Println("initializing", Version)
 
 	PatcherUrl = strings.TrimSuffix(PatcherUrl, "/")
 	FileListUrl = strings.TrimSuffix(FileListUrl, "/")
