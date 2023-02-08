@@ -110,11 +110,6 @@ func (c *Client) Patch() {
 func (c *Client) selfUpdateAndPatch() error {
 	var err error
 
-	err = c.selfUpdate()
-	if err != nil {
-		c.logf("Failed self update, skipping: %s", err)
-	}
-
 	err = c.fetchFileList()
 	if err != nil {
 		c.logf("Failed fetch file list, skipping: %s", err)
@@ -124,6 +119,11 @@ func (c *Client) selfUpdateAndPatch() error {
 	err = c.patch()
 	if err != nil {
 		return fmt.Errorf("patch: %w", err)
+	}
+
+	err = c.selfUpdate()
+	if err != nil {
+		c.logf("Failed self update, skipping: %s", err)
 	}
 
 	return nil
@@ -162,6 +162,26 @@ func (c *Client) selfUpdate() error {
 	if err != nil {
 		return fmt.Errorf("executable: %w", err)
 	}
+
+	baseName := exeName
+	if strings.Contains(baseName, ".") {
+		baseName = baseName[strings.Index(baseName, ".")+1:]
+	}
+
+	err = os.Remove(baseName + ".bat")
+	if err != nil && !os.IsNotExist(err) {
+		c.logf("Failed to remove %s.bat: %s", baseName, err)
+	} else {
+		c.logf("Removed %s.bat", baseName)
+	}
+
+	err = os.Remove("." + baseName + ".exe.old")
+	if err != nil && !os.IsNotExist(err) {
+		c.logf("Failed to remove .%s.exe.old: %s", baseName, err)
+	} else {
+		c.logf("Removed .%s.exe.old", baseName)
+	}
+
 	myHash, err := md5Checksum(exeName)
 	if err != nil {
 		return fmt.Errorf("checksum: %w", err)
@@ -214,14 +234,13 @@ func (c *Client) selfUpdate() error {
 		isErrored = true
 	}
 
-	c.logf("Successfully updated. Restarting launcheq...")
 	err = os.WriteFile("launcheq.bat", []byte("timeout 1\nlauncheq.exe"), os.ModePerm)
 	if err != nil {
 		fmt.Println("Failed to write launcheq.bat:", err)
 		isErrored = true
 	}
 
-	cmd := c.createCommand(true, fmt.Sprintf("%s/launcheq.bat", c.currentPath))
+	cmd := c.createCommand(false, fmt.Sprintf("%s/launcheq.bat", c.currentPath))
 	cmd.Dir = c.currentPath
 	err = cmd.Start()
 	if err != nil {
@@ -235,6 +254,9 @@ func (c *Client) selfUpdate() error {
 		time.Sleep(10 * time.Second)
 		os.Exit(1)
 	}
+
+	c.logf("Successfully updated. Restarting launcheq and starting EverQuest...")
+	time.Sleep(1 * time.Second)
 	os.Exit(0)
 	return nil
 }
