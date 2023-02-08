@@ -1,5 +1,5 @@
 NAME ?= launcheq
-VERSION ?= 0.0.5
+VERSION ?= 0.0.6
 FILELIST_URL ?= https://raw.githubusercontent.com/xackery/launcheq/rof
 PATCHER_URL ?= https://github.com/xackery/launcheq/releases/download/latest/
 
@@ -46,4 +46,4 @@ build-linux:
 .PHONY: build-windows
 build-windows:
 	@echo "Building Windows ${VERSION}"
-	@GOOS=windows GOARCH=amd64 go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -X main.PatcherUrl=${PATCHER_URL} -s -w" -o bin/${NAME}.exe main.go	
+	@go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -X main.PatcherUrl=${PATCHER_URL} -s -w" -o bin/${NAME}.exe main.go	

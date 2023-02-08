@@ -25,6 +25,8 @@ type Client struct {
 	patcherUrl    string
 	currentPath   string
 	clientVersion string
+	isPatched     bool
+	patchSummary  string
 	cfg           *config.Config
 	cacheFileList *FileList
 	version       string
@@ -91,6 +93,13 @@ func (c *Client) Patch() {
 	}
 	if username == "" {
 		username = "x"
+	}
+
+	if c.isPatched {
+		c.logf(c.patchSummary)
+		c.logf("You can check %s.txt if you wish to review the patched files later.", c.baseName)
+		c.logf("Since files were patched, waiting 5 seconds before launching EverQuest...")
+		time.Sleep(5 * time.Second)
 	}
 
 	c.logf("Launching EverQuest")
@@ -334,6 +343,7 @@ func (c *Client) patch() error {
 				}
 				totalDownloaded += int64(entry.Size)
 				progressSize += int64(entry.Size)
+				c.isPatched = true
 				continue
 			}
 			return fmt.Errorf("stat %s: %w", entry.Name, err)
@@ -356,6 +366,7 @@ func (c *Client) patch() error {
 		}
 		progressSize += int64(entry.Size)
 		totalDownloaded += int64(entry.Size)
+		c.isPatched = true
 	}
 
 	for _, entry := range fileList.Deletes {
@@ -389,14 +400,11 @@ func (c *Client) patch() error {
 	}
 
 	if totalDownloaded == 0 {
-		c.logf("Finished patch in %0.2f seconds", time.Since(start).Seconds())
+		c.patchSummary = fmt.Sprintf("Finished patch in %0.2f seconds", time.Since(start).Seconds())
 		return nil
 	}
-	c.logf("Finished patch of %s in %0.2f seconds", generateSize(int(totalDownloaded)), time.Since(start).Seconds())
+	c.patchSummary = fmt.Sprintf("Finished patch of %s in %0.2f seconds", generateSize(int(totalDownloaded)), time.Since(start).Seconds())
 
-	c.logf("You can check %s.txt if you wish to review the patched files later.", c.baseName)
-	c.logf("Since files were patched, waiting 5 seconds before launching EverQuest...")
-	time.Sleep(5 * time.Second)
 	return nil
 }
 
