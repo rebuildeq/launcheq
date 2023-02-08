@@ -12,18 +12,18 @@ import (
 )
 
 var (
-	//go:embed version.txt
-	version string
-	//go:embed url.txt
-	url string
+	Version     string
+	PatcherUrl  string
+	FileListUrl string
 )
 
 func main() {
-	log.Println("initializing", version)
+	log.Println("initializing", Version)
 
-	url = strings.TrimSuffix(url, "/")
+	PatcherUrl = strings.TrimSuffix(PatcherUrl, "/")
+	FileListUrl = strings.TrimSuffix(FileListUrl, "/")
 
-	c, err := client.New(version, url)
+	c, err := client.New(Version, PatcherUrl, FileListUrl)
 	if err != nil {
 		fmt.Println("Failed client new:", err)
 		os.Exit(1)

@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bufio"
 	"context"
 	"crypto/md5"
 	"fmt"
@@ -20,7 +21,8 @@ import (
 
 // Client wraps the entire UI
 type Client struct {
-	url           string
+	patcherUrl    string
+	fileListUrl   string
 	currentPath   string
 	clientVersion string
 	cfg           *config.Config
@@ -31,11 +33,12 @@ type Client struct {
 }
 
 // New creates a new client
-func New(version string, url string) (*Client, error) {
+func New(version string, patcherUrl string, fileListUrl string) (*Client, error) {
 	var err error
 	c := &Client{
 		clientVersion: "rof",
-		url:           url,
+		patcherUrl:    patcherUrl,
+		fileListUrl:   fileListUrl,
 		version:       version,
 		httpClient: &http.Client{
 			Timeout: 3 * time.Second,
@@ -65,7 +68,16 @@ func (c *Client) Patch() {
 		isErrored = true
 	}
 
-	cmd := c.createCommand(true, fmt.Sprintf("%s/eqgame.exe", c.currentPath), "patchme")
+	username, err := c.fetchUsername()
+	if err != nil {
+		c.logf("Failed grabbing username from eqlsPlayerData.ini: %s", err)
+		//this error is not critical
+	}
+	if username == "" {
+		username = "x"
+	}
+
+	cmd := c.createCommand(true, fmt.Sprintf("%s/eqgame.exe", c.currentPath), "patchme", "/login:"+username)
 	cmd.Dir = c.currentPath
 	err = cmd.Start()
 	if err != nil {
@@ -83,7 +95,7 @@ func (c *Client) Patch() {
 
 	if isErrored && runtime.GOOS == "windows" {
 		fmt.Println("There was an error while launching EQ. Review above or launcheq.txt to see why.")
-		fmt.Println("Automatically exiting in 20 seconds...")
+		fmt.Println("Automatically exiting in 10 seconds...")
 		time.Sleep(10 * time.Second)
 	}
 }
@@ -112,11 +124,11 @@ func (c *Client) selfUpdateAndPatch() error {
 
 func (c *Client) fetchFileList() error {
 	client := c.httpClient
-	url := fmt.Sprintf("%s/filelist_%s.yml", c.url, c.clientVersion)
+	url := fmt.Sprintf("%s/filelist_%s.yml", c.fileListUrl, c.clientVersion)
 	fmt.Println("Downloading", url)
 	resp, err := client.Get(url)
 	if err != nil {
-		url := fmt.Sprintf("%s/%s/filelist_%s.yml", c.url, c.clientVersion, c.clientVersion)
+		url := fmt.Sprintf("%s/%s/filelist_%s.yml", c.fileListUrl, c.clientVersion, c.clientVersion)
 		fmt.Println("Downloading legacy", url)
 		resp, err = client.Get(url)
 		if err != nil {
@@ -139,7 +151,7 @@ func (c *Client) fetchFileList() error {
 func (c *Client) selfUpdate() error {
 	client := c.httpClient
 
-	url := fmt.Sprintf("%s/launcheq-hash.txt", c.url)
+	url := fmt.Sprintf("%s/launcheq-hash.txt", c.patcherUrl)
 	c.logf("Checking for self update at %s", url)
 	resp, err := client.Get(url)
 	if err != nil {
@@ -165,7 +177,7 @@ func (c *Client) selfUpdate() error {
 
 	c.logf("Updating launcheq...")
 
-	url = fmt.Sprintf("%s/launcheq.exe", c.url)
+	url = fmt.Sprintf("%s/launcheq.exe", c.patcherUrl)
 	c.logf("Downloading launcheq at %s", url)
 	resp, err = client.Get(url)
 	if err != nil {
@@ -177,6 +189,30 @@ func (c *Client) selfUpdate() error {
 	if err != nil {
 		return fmt.Errorf("apply: %w", err)
 	}
+
+	isErrored := false
+
+	err = os.WriteFile("launcheq.txt", []byte(c.cacheLog), os.ModePerm)
+	if err != nil {
+		fmt.Println("Failed to write log:", err)
+		isErrored = true
+	}
+
+	cmd := c.createCommand(true, fmt.Sprintf("%s/launcheq.exe", c.currentPath))
+	cmd.Dir = c.currentPath
+	err = cmd.Start()
+	if err != nil {
+		fmt.Println("Failed to self run launcheq.exe:", err)
+		isErrored = true
+	}
+
+	if isErrored && runtime.GOOS == "windows" {
+		fmt.Println("There was an error while self updating launcheq. Review above or launcheq.txt to see why.")
+		fmt.Println("Automatically exiting in 10 seconds...")
+		time.Sleep(10 * time.Second)
+		os.Exit(1)
+	}
+	os.Exit(0)
 	return nil
 }
 
@@ -312,7 +348,7 @@ func (c *Client) downloadPatchFile(entry FileEntry) error {
 	defer w.Close()
 	client := c.httpClient
 
-	url := fmt.Sprintf("%s/%s/%s", c.url, c.clientVersion, entry.Name)
+	url := fmt.Sprintf("%s/%s/%s", c.patcherUrl, c.clientVersion, entry.Name)
 	resp, err := client.Get(url)
 	if err != nil {
 		return fmt.Errorf("download %s: %w", url, err)
@@ -360,4 +396,24 @@ func generateSize(in int) string {
 	}
 	val /= 1024
 	return fmt.Sprintf("%0.2f TB", val)
+}
+
+func (c *Client) fetchUsername() (string, error) {
+
+	r, err := os.Open("eqlsPlayerData.ini")
+	if err != nil {
+		return "", err
+	}
+	defer r.Close()
+
+	scanner := bufio.NewScanner(r)
+	// optionally, resize scanner's capacity for lines over 64K, see next example
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "Username=") {
+			line = strings.TrimPrefix(line, "Username=")
+			return line, nil
+		}
+	}
+	return "", nil
 }
