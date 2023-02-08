@@ -1,5 +1,5 @@
 NAME ?= launcheq
-VERSION ?= 0.0.1
+VERSION ?= 0.0.2
 FILELIST_URL ?= https://raw.githubusercontent.com/xackery/launcheq/rof
 PATCHER_URL ?= https://github.com/xackery/launcheq/releases/download/latest/
 
@@ -24,6 +24,8 @@ run: sanitize
 	mkdir -p bin
 	cd bin && go run ../main.go
 
+bundle:
+	rsrc -manifest eqemupatcher.manifest -ico launcheq.ico -o rsrc.syso
 
 .PHONY: build-all
 build-all: sanitize build-prepare build-linux build-darwin build-windows	

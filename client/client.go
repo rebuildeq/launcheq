@@ -62,7 +62,15 @@ func (c *Client) Patch() {
 	start := time.Now()
 	isErrored := false
 
-	err := c.selfUpdateAndPatch()
+	_, err := os.Stat("eqgame.exe")
+	if err != nil {
+		fmt.Println("eqgame.exe must be in the same directory as launcheq.")
+		fmt.Println("Automatically exiting in 10 seconds...")
+		time.Sleep(10 * time.Second)
+		os.Exit(1)
+	}
+
+	err = c.selfUpdateAndPatch()
 	if err != nil {
 		c.logf("Failed patch: %s", err)
 		isErrored = true
@@ -170,12 +178,13 @@ func (c *Client) selfUpdate() error {
 		c.logf("Remote site down, ignoring self update")
 		return nil
 	}
+
 	if c.cfg.LaunchEQVersion == remoteHash {
 		c.logf("Self update not needed")
 		return nil
 	}
 
-	c.logf("Updating launcheq...")
+	c.logf("Updating launcheq... %s vs %s", c.cfg.LaunchEQVersion, remoteHash)
 
 	url = fmt.Sprintf("%s/launcheq.exe", c.patcherUrl)
 	c.logf("Downloading launcheq at %s", url)
@@ -184,7 +193,7 @@ func (c *Client) selfUpdate() error {
 		return fmt.Errorf("get: %w", err)
 	}
 	defer resp.Body.Close()
-
+	c.logf("Applying update")
 	err = selfupdate.Apply(resp.Body, selfupdate.Options{})
 	if err != nil {
 		return fmt.Errorf("apply: %w", err)
