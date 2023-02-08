@@ -36,6 +36,7 @@ jobs:
     - name: Build binary
       env:
         PATCHER_URL: ${{ vars.PATCHER_URL }}
+        FILELIST_URL: ${{ vars.FILELIST_URL }}
       run: |
         make build-windows
         md5=($(md5sum -b bin/launcheq.exe))
