@@ -1,5 +1,5 @@
 NAME ?= launcheq
-VERSION ?= 0.0.4
+VERSION ?= 0.0.5
 FILELIST_URL ?= https://raw.githubusercontent.com/xackery/launcheq/rof
 PATCHER_URL ?= https://github.com/xackery/launcheq/releases/download/latest/
 
@@ -26,7 +26,7 @@ run: sanitize
 
 #go install github.com/tc-hib/go-winres@latest
 bundle:
-	go-winres simply --icon icon.png
+	go-winres simply --icon launcheq.png
 
 .PHONY: build-all
 build-all: sanitize build-prepare build-linux build-darwin build-windows	

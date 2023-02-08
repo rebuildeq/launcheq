@@ -165,19 +165,23 @@ func (c *Client) selfUpdate() error {
 
 	baseName := exeName
 	if strings.Contains(baseName, ".") {
-		baseName = baseName[strings.Index(baseName, ".")+1:]
+		baseName = baseName[0:strings.Index(baseName, ".")]
 	}
 
 	err = os.Remove(baseName + ".bat")
-	if err != nil && !os.IsNotExist(err) {
-		c.logf("Failed to remove %s.bat: %s", baseName, err)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			c.logf("Failed to remove %s.bat: %s", baseName, err)
+		}
 	} else {
 		c.logf("Removed %s.bat", baseName)
 	}
 
 	err = os.Remove("." + baseName + ".exe.old")
-	if err != nil && !os.IsNotExist(err) {
-		c.logf("Failed to remove .%s.exe.old: %s", baseName, err)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			c.logf("Failed to remove .%s.exe.old: %s", baseName, err)
+		}
 	} else {
 		c.logf("Removed .%s.exe.old", baseName)
 	}
