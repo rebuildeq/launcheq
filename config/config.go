@@ -2,9 +2,7 @@ package config
 
 import (
 	"context"
-	"crypto/md5"
 	"fmt"
-	"io"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -13,7 +11,6 @@ import (
 // Config represents a configuration parse
 type Config struct {
 	FileListVersion string `yaml:"FileListVersion" desc:"Version of last file list fetched"`
-	LaunchEQVersion string `yaml:"LaunchEQVersion" desc:"Version of launcheq"`
 }
 
 // New creates a new configuration
@@ -52,7 +49,7 @@ func New(ctx context.Context) (*Config, error) {
 
 	if isNewConfig {
 		enc := yaml.NewEncoder(f)
-		cfg = getDefaultConfig()
+		cfg = Config{}
 		err = enc.Encode(cfg)
 		if err != nil {
 			return nil, fmt.Errorf("encode default: %w", err)
@@ -72,33 +69,6 @@ func New(ctx context.Context) (*Config, error) {
 func (c *Config) Verify() error {
 
 	return nil
-}
-
-func getDefaultConfig() Config {
-	cfg := Config{}
-
-	name, err := os.Executable()
-	if err != nil {
-		fmt.Println("executable:", err)
-		return cfg
-	}
-
-	f, err := os.Open(name)
-	if err != nil {
-		fmt.Println("open:", err)
-		return cfg
-	}
-	defer f.Close()
-
-	h := md5.New()
-	_, err = io.Copy(h, f)
-	if err != nil {
-		fmt.Println("copy:", err)
-		return cfg
-	}
-	cfg.LaunchEQVersion = fmt.Sprintf("%x", h.Sum(nil))
-
-	return cfg
 }
 
 // Save writes the config to disk

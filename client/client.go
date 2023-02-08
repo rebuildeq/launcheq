@@ -49,7 +49,7 @@ func New(version string, patcherUrl string, fileListUrl string) (*Client, error)
 	if err != nil {
 		return nil, fmt.Errorf("config.new: %w", err)
 	}
-	c.logf("Starting launcheq %s %s", c.version, c.cfg.LaunchEQVersion)
+	c.logf("Starting launcheq %s", c.version)
 	c.currentPath, err = os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("wd invalid: %w", err)
@@ -159,6 +159,14 @@ func (c *Client) fetchFileList() error {
 func (c *Client) selfUpdate() error {
 	client := c.httpClient
 
+	exeName, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("executable: %w", err)
+	}
+	myHash, err := md5Checksum(exeName)
+	if err != nil {
+		return fmt.Errorf("checksum: %w", err)
+	}
 	url := fmt.Sprintf("%s/launcheq-hash.txt", c.patcherUrl)
 	c.logf("Checking for self update at %s", url)
 	resp, err := client.Get(url)
@@ -179,12 +187,12 @@ func (c *Client) selfUpdate() error {
 		return nil
 	}
 
-	if c.cfg.LaunchEQVersion == remoteHash {
+	if myHash == remoteHash {
 		c.logf("Self update not needed")
 		return nil
 	}
 
-	c.logf("Updating launcheq... %s vs %s", c.cfg.LaunchEQVersion, remoteHash)
+	c.logf("Updating launcheq... %s vs %s", myHash, remoteHash)
 
 	url = fmt.Sprintf("%s/launcheq.exe", c.patcherUrl)
 	c.logf("Downloading launcheq at %s", url)
@@ -207,6 +215,8 @@ func (c *Client) selfUpdate() error {
 		isErrored = true
 	}
 
+	c.logf("Launching in 5 seconds..")
+	time.Sleep(5 * time.Second)
 	cmd := c.createCommand(true, fmt.Sprintf("%s/launcheq.exe", c.currentPath))
 	cmd.Dir = c.currentPath
 	err = cmd.Start()
@@ -238,7 +248,7 @@ func (c *Client) patch() error {
 
 	fileList := c.cacheFileList
 
-	if c.cfg.LaunchEQVersion == fileList.Version {
+	if c.cfg.FileListVersion == fileList.Version {
 		if len(fileList.Version) < 8 {
 			c.logf("We are up to date")
 			return nil
@@ -333,7 +343,7 @@ func (c *Client) patch() error {
 		c.logf("%s removed", entry.Name)
 	}
 
-	c.cfg.LaunchEQVersion = fileList.Version
+	c.cfg.FileListVersion = fileList.Version
 	err = c.cfg.Save()
 	if err != nil {
 		c.logf("Failed to save version to eqemupatch.yml: %s", err)
