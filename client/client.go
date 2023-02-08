@@ -214,13 +214,18 @@ func (c *Client) selfUpdate() error {
 		isErrored = true
 	}
 
-	c.logf("Launching in 5 seconds..")
-	time.Sleep(5 * time.Second)
-	cmd := c.createCommand(true, fmt.Sprintf("%s/launcheq.exe", c.currentPath))
+	c.logf("Successfully updated. Restarting launcheq...")
+	err = os.WriteFile("launcheq.bat", []byte("timeout 1\nlauncheq.exe"), os.ModePerm)
+	if err != nil {
+		fmt.Println("Failed to write launcheq.bat:", err)
+		isErrored = true
+	}
+
+	cmd := c.createCommand(true, fmt.Sprintf("%s/launcheq.bat", c.currentPath))
 	cmd.Dir = c.currentPath
 	err = cmd.Start()
 	if err != nil {
-		fmt.Println("Failed to self run launcheq.exe:", err)
+		fmt.Println("Failed to start launcheq.bat:", err)
 		isErrored = true
 	}
 
@@ -305,7 +310,7 @@ func (c *Client) patch() error {
 		}
 
 		if hash == entry.Md5 {
-			c.logf("%s skipped", entry.Name)
+			c.logf("%s skipped (up to date)", entry.Name)
 			progressSize += int64(entry.Size)
 			continue
 		}
@@ -354,7 +359,8 @@ func (c *Client) patch() error {
 	}
 	c.logf("Finished patch of %s in %0.2f seconds", generateSize(int(totalDownloaded)), time.Since(start).Seconds())
 
-	c.logf("Since files were patched, waiting 5 seconds before launching EQ...")
+	c.logf("You can check launcheq.txt if you wish to review the patched files later.")
+	c.logf("Since files were patched, waiting 5 seconds before launching EverQuest...")
 	time.Sleep(5 * time.Second)
 	return nil
 }
