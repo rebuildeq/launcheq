@@ -1,9 +1,5 @@
 name: Platform Tests & Build
 on: [push]
-env:
-  FILELIST_URL: ${{ vars.FILELIST_URL }}
-  PATCHER_URL: ${{ vars.PATCHER_URL }}
-  
 jobs:
   platform_tests:
     runs-on: ubuntu-latest
@@ -26,6 +22,8 @@ jobs:
       run: go test -tags ci,wayland ./...
 
     - name: Build filelist
+      env:
+        FILELIST_URL: ${{ vars.FILELIST_URL }}
       run: |
         cd rof
         wget https://github.com/xackery/filelistbuilder/releases/download/latest/filelistbuilder-linux-x64
@@ -36,7 +34,9 @@ jobs:
         ./filelistbuilder-linux-x64
 
     - name: Build binary
-      run: |       
+      env:
+        PATCHER_URL: ${{ vars.PATCHER_URL }}
+      run: |
         make build-windows
         md5=($(md5sum -b bin/launcheq.exe))
         echo $md5 > bin/launcheq-hash.txt
