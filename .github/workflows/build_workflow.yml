@@ -4,6 +4,7 @@ on: [push]
 env:
   PATCHERURL: ${{ vars.PATCHER }}
   FILELISTURL: ${{ vars.FILELIST }}
+  TESTVAR: ${{ vars.testvar }}
 
 jobs:
   platform_tests:
@@ -25,7 +26,7 @@ jobs:
         wget --no-verbose https://github.com/xackery/filelistbuilder/releases/download/latest/filelistbuilder-linux-x64
         chmod +x filelistbuilder-linux-x64
         echo -e "client: rof\n" > filelistbuilder.yml
-        echo "download prefix set to $FILELIST or ${{ vars.FILELIST }}"
+        echo "download prefix set to $FILELIST or ${{ vars.FILELIST }} and $TESTVAR"
         echo "downloadprefix: $FILELIST" >> filelistbuilder.yml
         ./filelistbuilder-linux-x64
 
