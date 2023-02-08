@@ -43,6 +43,7 @@ jobs:
       run: |
         make build-windows
         md5=($(md5sum -b bin/launcheq.exe))
+        echo "launcheq.exe md5 is set to $md5"
         echo $md5 > bin/launcheq-hash.txt
 
     # - name: Update coverage
