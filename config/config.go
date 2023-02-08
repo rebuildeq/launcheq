@@ -77,11 +77,13 @@ func (c *Config) Verify() error {
 func getDefaultConfig() Config {
 	cfg := Config{}
 
-	if len(os.Args) == 0 {
+	name, err := os.Executable()
+	if err != nil {
+		fmt.Println("executable:", err)
 		return cfg
 	}
 
-	f, err := os.Open(os.Args[0])
+	f, err := os.Open(name)
 	if err != nil {
 		fmt.Println("open:", err)
 		return cfg
