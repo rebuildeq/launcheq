@@ -2,8 +2,8 @@ name: Platform Tests & Build
 on: [push]
 
 env:
-  PATCHER_URL: ${{ vars.patcher }}
-  FILELIST_URL: ${{ vars.filelist }}
+  PATCHERURL: ${{ vars.patcherurl }}
+  FILELISTURL: ${{ vars.filelisturl }}
 
 jobs:
   platform_tests:
