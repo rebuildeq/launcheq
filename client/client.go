@@ -85,6 +85,7 @@ func (c *Client) Patch() {
 		username = "x"
 	}
 
+	c.logf("Launching EverQuest")
 	cmd := c.createCommand(true, fmt.Sprintf("%s/eqgame.exe", c.currentPath), "patchme", "/login:"+username)
 	cmd.Dir = c.currentPath
 	err = cmd.Start()
@@ -133,11 +134,11 @@ func (c *Client) selfUpdateAndPatch() error {
 func (c *Client) fetchFileList() error {
 	client := c.httpClient
 	url := fmt.Sprintf("%s/filelist_%s.yml", c.fileListUrl, c.clientVersion)
-	fmt.Println("Downloading", url)
+	c.logf("Downloading %s", url)
 	resp, err := client.Get(url)
 	if err != nil {
 		url := fmt.Sprintf("%s/%s/filelist_%s.yml", c.fileListUrl, c.clientVersion, c.clientVersion)
-		fmt.Println("Downloading legacy", url)
+		c.logf("Downloading legacy %s", url)
 		resp, err = client.Get(url)
 		if err != nil {
 			return fmt.Errorf("download %s: %w", url, err)
