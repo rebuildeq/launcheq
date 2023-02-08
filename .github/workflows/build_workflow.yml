@@ -8,6 +8,18 @@ jobs:
       with:
         persist-credentials: false
 
+    - name: Build filelist
+      env:
+        FILELIST_URL: ${{ vars.FILELIST_URL }}
+      run: |
+        cd rof
+        wget https://github.com/xackery/filelistbuilder/releases/download/latest/filelistbuilder-linux-x64
+        chmod +x filelistbuilder-linux-x64
+        echo -e "client: rof\n" > filelistbuilder.yml
+        echo "download prefix set to $FILELIST_URL"
+        echo "downloadprefix: $FILELIST_URL" >> filelistbuilder.yml
+        ./filelistbuilder-linux-x64
+
     - uses: WillAbides/setup-go-faster@v1.7.0
       with:
         go-version: 1.19
@@ -20,18 +32,6 @@ jobs:
 
     - name: Wayland Tests
       run: go test -tags ci,wayland ./...
-
-    - name: Build filelist
-      env:
-        FILELIST_URL: ${{ vars.FILELIST_URL }}
-      run: |
-        cd rof
-        wget https://github.com/xackery/filelistbuilder/releases/download/latest/filelistbuilder-linux-x64
-        chmod +x filelistbuilder-linux-x64
-        echo -e "client: rof\n" > filelistbuilder.yml
-        echo "download prefix set to $FILELIST_URL"
-        echo "downloadprefix: $FILELIST_URL" >> filelistbuilder.yml
-        ./filelistbuilder-linux-x64
 
     - name: Build binary
       env:
