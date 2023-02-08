@@ -2,8 +2,8 @@ name: Platform Tests & Build
 on: [push]
 
 env:
-  PATCHERURL: ${{ vars.patcherurl }}
-  FILELISTURL: ${{ vars.filelisturl }}
+  PATCHERURL: ${{ vars.PATCHER }}
+  FILELISTURL: ${{ vars.FILELIST }}
 
 jobs:
   platform_tests:
@@ -25,8 +25,8 @@ jobs:
         wget --no-verbose https://github.com/xackery/filelistbuilder/releases/download/latest/filelistbuilder-linux-x64
         chmod +x filelistbuilder-linux-x64
         echo -e "client: rof\n" > filelistbuilder.yml
-        echo "download prefix set to $FILELISTURL or ${{ vars.FILELISTURL }}"
-        echo "downloadprefix: $FILELISTURL" >> filelistbuilder.yml
+        echo "download prefix set to $FILELIST or ${{ vars.FILELIST }}"
+        echo "downloadprefix: $FILELIST" >> filelistbuilder.yml
         ./filelistbuilder-linux-x64
 
 

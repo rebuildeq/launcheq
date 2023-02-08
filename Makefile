@@ -1,7 +1,7 @@
 NAME ?= launcheq
 VERSION ?= 0.0.1
-FILELISTURL ?= https://raw.githubusercontent.com/xackery/launcheq/rof
-PATCHERURL ?= https://github.com/xackery/launcheq/releases/download/latest/
+FILELIST ?= https://raw.githubusercontent.com/xackery/launcheq/rof
+PATCHER ?= https://github.com/xackery/launcheq/releases/download/latest/
 
 #go install golang.org/x/tools/cmd/goimports@latest
 #go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
@@ -43,4 +43,4 @@ build-linux:
 .PHONY: build-windows
 build-windows:
 	@echo "Building Windows ${VERSION}"
-	@GOOS=windows GOARCH=amd64 go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -X main.PatcherUrl=${PATCHERURL} -X main.FileListUrl=${FILELISTURL} -s -w" -o bin/${NAME}-win-x64.exe main.go	
+	@GOOS=windows GOARCH=amd64 go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -X main.PatcherUrl=${PATCHER} -X main.FileListUrl=${FILELIST} -s -w" -o bin/${NAME}-win-x64.exe main.go	
