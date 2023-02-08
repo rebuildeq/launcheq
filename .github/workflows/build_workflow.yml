@@ -8,6 +8,12 @@ jobs:
       with:
         persist-credentials: false
 
+    - uses: WillAbides/setup-go-faster@v1.7.0
+      env:
+        FILELIST_URL: ${{ vars.FILELIST_URL }}
+      with:
+        go-version: 1.19
+
     - name: Build filelist
       env:
         FILELIST_URL: ${{ vars.FILELIST_URL }}
@@ -20,9 +26,6 @@ jobs:
         echo "downloadprefix: $FILELIST_URL" >> filelistbuilder.yml
         ./filelistbuilder-linux-x64
 
-    - uses: WillAbides/setup-go-faster@v1.7.0
-      with:
-        go-version: 1.19
 
 #    - name: Get dependencies
 #      run: sudo apt-get update && sudo apt-get install foo
