@@ -28,6 +28,7 @@ jobs:
         wget https://github.com/xackery/filelistbuilder/releases/download/latest/filelistbuilder-linux-x64
         chmod +x filelistbuilder-linux-x64
         echo -e "client: rof\n" > filelistbuilder.yml
+        echo "download prefix set to $FILELIST_URL"
         echo "downloadprefix: $FILELIST_URL" >> filelistbuilder.yml
         ./filelistbuilder-linux-x64
 
