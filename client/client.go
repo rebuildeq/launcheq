@@ -161,6 +161,10 @@ func (c *Client) fetchFileList() error {
 			return fmt.Errorf("download %s: %w", url, err)
 		}
 	}
+	if resp.StatusCode != 200 {
+		c.cacheFileList = &FileList{}
+		return fmt.Errorf("download %s responded %d (not 200)", url, resp.StatusCode)
+	}
 
 	defer resp.Body.Close()
 	fileList := &FileList{}
@@ -213,6 +217,10 @@ func (c *Client) selfUpdate() error {
 		return fmt.Errorf("download %s: %w", url, err)
 	}
 
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("download %s responded %d (not 200)", url, resp.StatusCode)
+	}
+
 	data, err := io.ReadAll(resp.Body)
 	resp.Body.Close()
 	if err != nil {
@@ -240,6 +248,9 @@ func (c *Client) selfUpdate() error {
 		return fmt.Errorf("get: %w", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("download %s responded %d (not 200)", url, resp.StatusCode)
+	}
 	c.logf("Applying update (will be used next launch)")
 	err = selfupdate.Apply(resp.Body, selfupdate.Options{})
 	if err != nil {
