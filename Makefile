@@ -46,4 +46,6 @@ build-linux:
 .PHONY: build-windows
 build-windows:
 	@echo "Building Windows ${VERSION}"
-	@GOOS=windows GOARCH=amd64 go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -X main.PatcherUrl=${PATCHER_URL} -s -w" -o bin/${NAME}.exe main.go	
+	go install github.com/akavel/rsrc@latest
+	rsrc -ico launcheq.ico -manifest launcheq.exe.manifest
+	GOOS=windows GOARCH=amd64 go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -X main.PatcherUrl=${PATCHER_URL} -s -w" -o bin/${NAME}.exe
