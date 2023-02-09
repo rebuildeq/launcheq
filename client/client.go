@@ -102,7 +102,7 @@ func (c *Client) Patch() {
 		time.Sleep(5 * time.Second)
 	}
 
-	c.logf("Launching EverQuest")
+	c.logf("Launching EverQuest from %s", c.currentPath)
 	cmd := c.createCommand(true, fmt.Sprintf("%s/eqgame.exe", c.currentPath), "patchme", "/login:"+username)
 	cmd.Dir = c.currentPath
 	err = cmd.Start()
