@@ -368,7 +368,7 @@ func (c *Client) downloadPatchFile(entry FileEntry) error {
 	defer w.Close()
 	client := c.httpClient
 
-	url := fmt.Sprintf("%s/%s/%s", c.patcherUrl, c.clientVersion, entry.Name)
+	url := fmt.Sprintf("%s/%s/%s", c.cacheFileList.DownloadPrefix, c.clientVersion, entry.Name)
 	resp, err := client.Get(url)
 	if err != nil {
 		return fmt.Errorf("download %s: %w", url, err)
