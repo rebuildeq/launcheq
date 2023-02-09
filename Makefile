@@ -46,4 +46,4 @@ build-linux:
 .PHONY: build-windows
 build-windows:
 	@echo "Building Windows ${VERSION}"
-	@go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -X main.PatcherUrl=${PATCHER_URL} -s -w" -o bin/${NAME}.exe main.go	
+	@GOOS=windows GOARCH=amd64 go build -buildmode=pie -ldflags="-X main.Version=${VERSION} -X main.PatcherUrl=${PATCHER_URL} -s -w" -o bin/${NAME}.exe main.go	
