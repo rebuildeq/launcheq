@@ -423,6 +423,9 @@ func (c *Client) downloadPatchFile(entry FileEntry) error {
 		return fmt.Errorf("download %s: %w", url, err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("download %s responded %d (not 200)", url, resp.StatusCode)
+	}
 
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
