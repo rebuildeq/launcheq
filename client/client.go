@@ -21,9 +21,12 @@ import (
 
 // Client wraps the entire UI
 type Client struct {
+	baseName      string
 	patcherUrl    string
 	currentPath   string
 	clientVersion string
+	isPatched     bool
+	patchSummary  string
 	cfg           *config.Config
 	cacheFileList *FileList
 	version       string
@@ -42,12 +45,21 @@ func New(version string, patcherUrl string) (*Client, error) {
 			Timeout: 3 * time.Second,
 		},
 	}
+	exeName, err := os.Executable()
+	if err != nil {
+		return nil, fmt.Errorf("executable: %w", err)
+	}
 
-	c.cfg, err = config.New(context.Background())
+	c.baseName = filepath.Base(exeName)
+	if strings.Contains(c.baseName, ".") {
+		c.baseName = c.baseName[0:strings.Index(c.baseName, ".")]
+	}
+
+	c.cfg, err = config.New(context.Background(), c.baseName)
 	if err != nil {
 		return nil, fmt.Errorf("config.new: %w", err)
 	}
-	c.logf("Starting launcheq %s", c.version)
+	c.logf("Starting %s %s", c.baseName, c.version)
 	c.currentPath, err = os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("wd invalid: %w", err)
@@ -62,7 +74,7 @@ func (c *Client) Patch() {
 
 	_, err := os.Stat("eqgame.exe")
 	if err != nil {
-		fmt.Println("eqgame.exe must be in the same directory as launcheq.")
+		fmt.Printf("eqgame.exe must be in the same directory as %s.\n", c.baseName)
 		fmt.Println("Automatically exiting in 10 seconds...")
 		time.Sleep(10 * time.Second)
 		os.Exit(1)
@@ -83,7 +95,14 @@ func (c *Client) Patch() {
 		username = "x"
 	}
 
-	c.logf("Launching EverQuest")
+	if c.isPatched {
+		c.logf(c.patchSummary)
+		c.logf("You can check %s.txt if you wish to review the patched files later.", c.baseName)
+		c.logf("Since files were patched, waiting 5 seconds before launching EverQuest...")
+		time.Sleep(5 * time.Second)
+	}
+
+	c.logf("Launching EverQuest from %s", c.currentPath)
 	cmd := c.createCommand(true, fmt.Sprintf("%s/eqgame.exe", c.currentPath), "patchme", "/login:"+username)
 	cmd.Dir = c.currentPath
 	err = cmd.Start()
@@ -94,14 +113,14 @@ func (c *Client) Patch() {
 
 	c.logf("Finished in %0.2f seconds", time.Since(start).Seconds())
 
-	err = os.WriteFile("launcheq.txt", []byte(c.cacheLog), os.ModePerm)
+	err = os.WriteFile(fmt.Sprintf("%s.txt", c.baseName), []byte(c.cacheLog), os.ModePerm)
 	if err != nil {
 		fmt.Println("Failed to write log:", err)
 		isErrored = true
 	}
 
 	if isErrored && runtime.GOOS == "windows" {
-		fmt.Println("There was an error while launching EQ. Review above or launcheq.txt to see why.")
+		fmt.Printf("There was an error while launching EQ. Review above or %s.txt to see why.\n", c.baseName)
 		fmt.Println("Automatically exiting in 10 seconds...")
 		time.Sleep(10 * time.Second)
 	}
@@ -109,11 +128,6 @@ func (c *Client) Patch() {
 
 func (c *Client) selfUpdateAndPatch() error {
 	var err error
-
-	err = c.selfUpdate()
-	if err != nil {
-		c.logf("Failed self update, skipping: %s", err)
-	}
 
 	err = c.fetchFileList()
 	if err != nil {
@@ -124,6 +138,11 @@ func (c *Client) selfUpdateAndPatch() error {
 	err = c.patch()
 	if err != nil {
 		return fmt.Errorf("patch: %w", err)
+	}
+
+	err = c.selfUpdate()
+	if err != nil {
+		c.logf("Failed self update, skipping: %s", err)
 	}
 
 	return nil
@@ -162,6 +181,27 @@ func (c *Client) selfUpdate() error {
 	if err != nil {
 		return fmt.Errorf("executable: %w", err)
 	}
+
+	baseName := c.baseName
+
+	err = os.Remove(baseName + ".bat")
+	if err != nil {
+		if !os.IsNotExist(err) {
+			c.logf("Failed to remove %s.bat: %s", baseName, err)
+		}
+	} else {
+		c.logf("Removed %s.bat", baseName)
+	}
+
+	err = os.Remove("." + baseName + ".exe.old")
+	if err != nil {
+		if !os.IsNotExist(err) {
+			c.logf("Failed to remove .%s.exe.old: %s", baseName, err)
+		}
+	} else {
+		c.logf("Removed .%s.exe.old", baseName)
+	}
+
 	myHash, err := md5Checksum(exeName)
 	if err != nil {
 		return fmt.Errorf("checksum: %w", err)
@@ -191,46 +231,55 @@ func (c *Client) selfUpdate() error {
 		return nil
 	}
 
-	c.logf("Updating launcheq... %s vs %s", myHash, remoteHash)
+	c.logf("Updating %s... %s vs %s", c.baseName, myHash, remoteHash)
 
-	url = fmt.Sprintf("%s/launcheq.exe", c.patcherUrl)
-	c.logf("Downloading launcheq at %s", url)
+	url = fmt.Sprintf("%s/%s.exe", c.patcherUrl, c.baseName)
+	c.logf("Downloading %s at %s", c.baseName, url)
 	resp, err = client.Get(url)
 	if err != nil {
 		return fmt.Errorf("get: %w", err)
 	}
 	defer resp.Body.Close()
-	c.logf("Applying update")
+	c.logf("Applying update (will be used next launch)")
 	err = selfupdate.Apply(resp.Body, selfupdate.Options{})
 	if err != nil {
 		return fmt.Errorf("apply: %w", err)
 	}
 
-	isErrored := false
+	//isErrored := false
 
-	err = os.WriteFile("launcheq.txt", []byte(c.cacheLog), os.ModePerm)
-	if err != nil {
-		fmt.Println("Failed to write log:", err)
-		isErrored = true
-	}
+	// c.logf("Creating %s.bat", c.baseName)
+	// err = os.WriteFile(fmt.Sprintf("%s.bat", c.baseName), []byte(fmt.Sprintf("timeout 1\n%s.exe", c.baseName)), os.ModePerm)
+	// if err != nil {
+	// 	fmt.Printf("Failed to write %s.bat: %s\n", c.baseName, err)
+	// 	isErrored = true
+	// }
 
-	c.logf("Launching in 5 seconds..")
-	time.Sleep(5 * time.Second)
-	cmd := c.createCommand(true, fmt.Sprintf("%s/launcheq.exe", c.currentPath))
-	cmd.Dir = c.currentPath
-	err = cmd.Start()
-	if err != nil {
-		fmt.Println("Failed to self run launcheq.exe:", err)
-		isErrored = true
-	}
+	// c.logf("Writing log")
+	// err = os.WriteFile(fmt.Sprintf("%s.txt", c.baseName), []byte(c.cacheLog), os.ModePerm)
+	// if err != nil {
+	// 	fmt.Println("Failed to write log:", err)
+	// 	isErrored = true
+	// }
 
-	if isErrored && runtime.GOOS == "windows" {
-		fmt.Println("There was an error while self updating launcheq. Review above or launcheq.txt to see why.")
-		fmt.Println("Automatically exiting in 10 seconds...")
-		time.Sleep(10 * time.Second)
-		os.Exit(1)
-	}
-	os.Exit(0)
+	// cmd := c.createCommand(false, fmt.Sprintf("%s/%s.bat", c.currentPath, c.baseName))
+	// cmd.Dir = c.currentPath
+	// err = cmd.Start()
+	// if err != nil {
+	// 	fmt.Printf("Failed to start %s.bat: %s\n", c.baseName, err)
+	// 	isErrored = true
+	// }
+
+	// if isErrored && runtime.GOOS == "windows" {
+	// 	fmt.Printf("There was an error while self updating %s. Review above or %s.txt to see why.\n", c.baseName, c.baseName)
+	// 	fmt.Println("Automatically exiting in 10 seconds...")
+	// 	time.Sleep(10 * time.Second)
+	// 	os.Exit(1)
+	// }
+
+	// c.logf("Successfully updated. Restarting %s and starting EverQuest...", c.baseName)
+	// time.Sleep(1 * time.Second)
+	// os.Exit(0)
 	return nil
 }
 
@@ -294,6 +343,7 @@ func (c *Client) patch() error {
 				}
 				totalDownloaded += int64(entry.Size)
 				progressSize += int64(entry.Size)
+				c.isPatched = true
 				continue
 			}
 			return fmt.Errorf("stat %s: %w", entry.Name, err)
@@ -305,7 +355,7 @@ func (c *Client) patch() error {
 		}
 
 		if hash == entry.Md5 {
-			c.logf("%s skipped", entry.Name)
+			c.logf("%s skipped (up to date)", entry.Name)
 			progressSize += int64(entry.Size)
 			continue
 		}
@@ -316,6 +366,7 @@ func (c *Client) patch() error {
 		}
 		progressSize += int64(entry.Size)
 		totalDownloaded += int64(entry.Size)
+		c.isPatched = true
 	}
 
 	for _, entry := range fileList.Deletes {
@@ -349,13 +400,11 @@ func (c *Client) patch() error {
 	}
 
 	if totalDownloaded == 0 {
-		c.logf("Finished patch in %0.2f seconds", time.Since(start).Seconds())
+		c.patchSummary = fmt.Sprintf("Finished patch in %0.2f seconds", time.Since(start).Seconds())
 		return nil
 	}
-	c.logf("Finished patch of %s in %0.2f seconds", generateSize(int(totalDownloaded)), time.Since(start).Seconds())
+	c.patchSummary = fmt.Sprintf("Finished patch of %s in %0.2f seconds", generateSize(int(totalDownloaded)), time.Since(start).Seconds())
 
-	c.logf("Since files were patched, waiting 5 seconds before launching EQ...")
-	time.Sleep(5 * time.Second)
 	return nil
 }
 
@@ -374,6 +423,9 @@ func (c *Client) downloadPatchFile(entry FileEntry) error {
 		return fmt.Errorf("download %s: %w", url, err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("download %s responded %d (not 200)", url, resp.StatusCode)
+	}
 
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {

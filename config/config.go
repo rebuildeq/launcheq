@@ -11,13 +11,16 @@ import (
 // Config represents a configuration parse
 type Config struct {
 	FileListVersion string `yaml:"FileListVersion" desc:"Version of last file list fetched"`
+	baseName        string
 }
 
 // New creates a new configuration
-func New(ctx context.Context) (*Config, error) {
+func New(ctx context.Context, baseName string) (*Config, error) {
 	var f *os.File
-	cfg := Config{}
-	path := "launcheq.yml"
+	cfg := Config{
+		baseName: baseName,
+	}
+	path := baseName + ".yml"
 
 	isNewConfig := false
 	fi, err := os.Stat(path)
@@ -27,7 +30,7 @@ func New(ctx context.Context) (*Config, error) {
 		}
 		f, err = os.Create(path)
 		if err != nil {
-			return nil, fmt.Errorf("create launcheq.yml: %w", err)
+			return nil, fmt.Errorf("create %s.yml: %w", baseName, err)
 		}
 		fi, err = os.Stat(path)
 		if err != nil {
@@ -44,7 +47,7 @@ func New(ctx context.Context) (*Config, error) {
 
 	defer f.Close()
 	if fi.IsDir() {
-		return nil, fmt.Errorf("launcheq.yml is a directory, should be a file")
+		return nil, fmt.Errorf("%s.yml is a directory, should be a file", baseName)
 	}
 
 	if isNewConfig {
@@ -59,7 +62,7 @@ func New(ctx context.Context) (*Config, error) {
 
 	err = yaml.NewDecoder(f).Decode(&cfg)
 	if err != nil {
-		return nil, fmt.Errorf("decode launcheq.yml: %w", err)
+		return nil, fmt.Errorf("decode %s.yml: %w", baseName, err)
 	}
 
 	return &cfg, nil
@@ -73,9 +76,9 @@ func (c *Config) Verify() error {
 
 // Save writes the config to disk
 func (c *Config) Save() error {
-	w, err := os.Create("launcheq.yml")
+	w, err := os.Create(fmt.Sprintf("%s.yml", c.baseName))
 	if err != nil {
-		return fmt.Errorf("create launcheq.yml: %w", err)
+		return fmt.Errorf("create %s.yml: %w", c.baseName, err)
 	}
 	defer w.Close()
 
