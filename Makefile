@@ -1,5 +1,5 @@
 NAME ?= launcheq
-VERSION ?= 0.0.8
+VERSION ?= 0.0.9
 FILELIST_URL ?= https://raw.githubusercontent.com/xackery/launcheq/rof
 PATCHER_URL ?= https://github.com/xackery/launcheq/releases/latest/download/
 
