@@ -61,7 +61,7 @@ jobs:
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         automatic_release_tag: "${{ env.VERSION }}.${{ github.run_number }}"
-        prerelease: true
+        prerelease: false
         title: "${{ env.VERSION }}.${{ github.run_number }}"
         files: |
           bin/launcheq.exe
