@@ -227,7 +227,8 @@ func (c *Client) selfUpdate() error {
 		return fmt.Errorf("read %s: %w", url, err)
 	}
 
-	remoteHash := strings.TrimSpace(string(data))
+	myHash = strings.ToUpper(strings.TrimSpace(myHash))
+	remoteHash := strings.ToUpper(strings.TrimSpace(string(data)))
 
 	if remoteHash == "Not Found" {
 		c.logf("Remote site down, ignoring self update")
