@@ -234,7 +234,7 @@ func (c *Client) selfUpdate() error {
 		return nil
 	}
 
-	if myHash == remoteHash {
+	if strings.ToUpper(myHash) == strings.ToUpper(remoteHash) {
 		c.logf("Self update not needed")
 		return nil
 	}
