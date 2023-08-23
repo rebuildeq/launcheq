@@ -1,7 +1,12 @@
 NAME ?= launcheq
-VERSION ?= 0.0.7
+VERSION ?= 0.0.9
 FILELIST_URL ?= https://raw.githubusercontent.com/xackery/launcheq/rof
-PATCHER_URL ?= https://github.com/xackery/launcheq/releases/download/latest/
+PATCHER_URL ?= https://github.com/xackery/launcheq/releases/latest/download/
+
+# CICD triggers this
+.PHONY: set-variable
+set-version:
+	@echo "VERSION=${VERSION}" >> $$GITHUB_ENV
 
 #go install golang.org/x/tools/cmd/goimports@latest
 #go install github.com/fzipp/gocyclo/cmd/gocyclo@latest

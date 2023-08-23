@@ -2,9 +2,10 @@ name: Platform Tests & Build
 on: [push]
 
 env:
-  PATCHER_URL: ${{ vars.PATCHER_URL }}
-  FILELIST_URL: ${{ vars.FILELIST_URL }}
-  
+  PATCHER_URL: ${{ vars.PATCHER_URL == '' && format('https://github.com/{0}/releases/latest/download/', github.repository) || vars.PATCHER_URL }}
+  FILELIST_URL: ${{ vars.FILELIST_URL == '' && format('https://github.com/{0}/releases/latest/download', github.repository) || vars.FILELIST_URL }}
+  STORAGE_URL: ${{ vars.STORAGE_URL == '' && format('https://raw.githubusercontent.com/{0}/master/', github.repository) || vars.STORAGE_URL }}
+
 jobs:
   platform_tests:
     runs-on: ubuntu-latest
@@ -13,22 +14,14 @@ jobs:
       with:
         persist-credentials: false
 
+    - name: Set Version
+      run: make set-version
+
     - uses: WillAbides/setup-go-faster@v1.7.0
       env:
         FILELIST_URL: ${{ vars.FILELIST_URL }}
       with:
         go-version: 1.19
-
-    - name: Build filelist
-      run: |
-        cd rof
-        wget --no-verbose https://github.com/xackery/filelistbuilder/releases/download/latest/filelistbuilder-linux-x64
-        chmod +x filelistbuilder-linux-x64
-        echo -e "client: rof\n" > filelistbuilder.yml
-        echo "download prefix set to $FILELIST_URL"
-        echo "downloadprefix: $FILELIST_URL" >> filelistbuilder.yml
-        ./filelistbuilder-linux-x64
-
 
 #    - name: Get dependencies
 #      run: sudo apt-get update && sudo apt-get install foo
@@ -42,9 +35,14 @@ jobs:
     - name: Build binary
       run: |
         make build-windows
-        md5=($(md5sum -b bin/launcheq.exe))
-        echo "launcheq.exe md5 is set to $md5"
-        echo $md5 > bin/launcheq-hash.txt
+
+    - name: Build FileList
+      run: |
+        cd rof
+        wget --no-verbose https://github.com/xackery/filelistbuilder/releases/latest/download/filelistbuilder-linux-x64
+        chmod +x filelistbuilder-linux-x64
+        ./filelistbuilder-linux-x64 "rof" "${{env.STORAGE_URL}}" "../bin/launcheq.exe"
+        mv eqemupatcher-hash.txt ../bin/launcheq-hash.txt
 
     # - name: Update coverage
     #   run: |
@@ -62,9 +60,9 @@ jobs:
     - uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        automatic_release_tag: "latest"
+        automatic_release_tag: "${{ env.VERSION }}.${{ github.run_number }}"
         prerelease: false
-        title: "Latest Release"
+        title: "${{ env.VERSION }}.${{ github.run_number }}"
         files: |
           bin/launcheq.exe
           bin/launcheq-hash.txt
